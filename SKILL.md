@@ -42,6 +42,8 @@ bun run src/cli.ts tag ./library --api
 
 Set `MEDIA_TAG_API_KEY` in `.env` or pass `--api-key`. Configure OpenAI-compatible endpoints via `MEDIA_TAG_BASE_URL`/`MEDIA_TAG_MODEL` env vars or `--api-base-url`/`--api-model` flags (flags win).
 
+Audio tagging needs an audio-capable model. Override audio routing with `MEDIA_TAG_AUDIO_BASE_URL`/`MEDIA_TAG_AUDIO_MODEL`/`MEDIA_TAG_AUDIO_API_KEY`; each falls back to its non-audio counterpart when unset.
+
 ## Privacy Behavior
 
 Offline mode hashes/probes local files and writes local outputs. API mode may upload selected media evidence: images, sampled video frames, or audio clips. Do not enable API mode for private, sensitive, or confidential media.
@@ -57,4 +59,6 @@ Offline mode hashes/probes local files and writes local outputs. API mode may up
 - forgetting `--api` and expecting AI tags
 - setting API key but not enabling `--api`
 - assuming whole video upload; VLM receives sampled JPEG frames
+- assuming whole audio upload; audio model receives first-30s mp3 clip
 - using API mode on confidential media
+- pointing audio tagging at a text-only model; result is empty/unknown tags — set `MEDIA_TAG_AUDIO_MODEL`

@@ -57,6 +57,10 @@ Copy `.env.sample` to `.env` and set `MEDIA_TAG_API_KEY`, or pass `--api-key`. `
 
 Optional flags: `--api-base-url`, `--api-model`, `--sample-interval`, `--max-frames`.
 
+### Audio overrides
+
+Audio tagging needs an audio-capable model. When the default model cannot hear audio, set `MEDIA_TAG_AUDIO_BASE_URL`, `MEDIA_TAG_AUDIO_MODEL`, and/or `MEDIA_TAG_AUDIO_API_KEY` to route audio requests to a different endpoint/model/key. Each falls back to its non-audio counterpart when unset.
+
 ## Offline vs API mode
 
 Offline mode writes hashes, technical metadata, sidecars, and manifests. AI summaries/tags/quality scores stay empty/default.
@@ -66,6 +70,10 @@ API mode sends selected evidence to the configured provider and fills AI-generat
 ## Video tagging
 
 The CLI samples JPEG frames from video with ffmpeg and sends those sampled JPEG frames to the VLM. It does not upload the whole video file.
+
+## Audio tagging
+
+The CLI extracts the first 30 seconds as an mp3 clip with ffmpeg and sends that clip (base64 `input_audio`) to the configured audio model. It does not upload the whole audio file.
 
 ## Privacy
 
