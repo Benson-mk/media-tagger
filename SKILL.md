@@ -40,7 +40,7 @@ bun run src/cli.ts tag ./library --api
 
 ## API Configuration
 
-Set `MEDIA_TAG_API_KEY` in `.env` or pass `--api-key`. Use `--api-base-url` for OpenAI-compatible endpoints and `--api-model` for model selection.
+Set `MEDIA_TAG_API_KEY` in `.env` or pass `--api-key`. Configure OpenAI-compatible endpoints via `MEDIA_TAG_BASE_URL`/`MEDIA_TAG_MODEL` env vars or `--api-base-url`/`--api-model` flags (flags win).
 
 ## Privacy Behavior
 

@@ -53,7 +53,7 @@ bun run src/cli.ts tag ./library --api
 
 ## API configuration
 
-Copy `.env.sample` to `.env` and set `MEDIA_TAG_API_KEY`, or pass `--api-key`.
+Copy `.env.sample` to `.env` and set `MEDIA_TAG_API_KEY`, or pass `--api-key`. `MEDIA_TAG_BASE_URL` and `MEDIA_TAG_MODEL` set the default endpoint and model.
 
 Optional flags: `--api-base-url`, `--api-model`, `--sample-interval`, `--max-frames`.
 
