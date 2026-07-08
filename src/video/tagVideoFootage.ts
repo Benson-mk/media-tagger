@@ -11,11 +11,14 @@ import {
   type VideoTaggingResponse,
   VideoTaggingResponseSchema,
 } from "./buildVideoPrompt"
-import { type SampledFrame, sampleFrames } from "./sampleFrames"
+import { type SampledFrame, type SampleFramesOptions, sampleFrames } from "./sampleFrames"
 
 type VideoTaggingDependencies = {
   readonly probe?: (path: string) => Promise<VideoProbeResult>
-  readonly sample?: (path: string) => Promise<readonly SampledFrame[]>
+  readonly sample?: (
+    path: string,
+    options?: SampleFramesOptions,
+  ) => Promise<readonly SampledFrame[]>
 }
 
 export type TagVideoFootageOptions = {
@@ -39,7 +42,11 @@ export async function tagVideoFootage(options: TagVideoFootageOptions): Promise<
     return sidecar
   }
 
-  const frames = await sample(options.videoPath)
+  const duration = probeResult.available ? probeResult.duration : null
+  const frames = await sample(
+    options.videoPath,
+    duration !== null && duration !== undefined ? { durationSeconds: duration } : {},
+  )
   if (frames.length === 0) {
     logger.warn("video frame sampling produced no frames", { path: options.videoPath })
     const sidecar = baseSidecar(options, now, technicalMetadata(probeResult), false)
