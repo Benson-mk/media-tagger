@@ -54,9 +54,13 @@ async function makeTempDir(): Promise<string> {
   return await mkdtemp(join(tmpdir(), "media-tagger-cli-tag-"))
 }
 
-async function runCli(args: readonly string[]): Promise<CliResult> {
+async function runCli(
+  args: readonly string[],
+  env: Record<string, string> = {},
+): Promise<CliResult> {
   const proc = Bun.spawn(["bun", "run", "src/cli.ts", ...args], {
     cwd: process.cwd(),
+    env: { ...process.env, ...env },
     stdout: "pipe",
     stderr: "pipe",
   })
@@ -199,6 +203,30 @@ test("tag with API and image type calls API only for images", async () => {
     expect(photo.tags.core).toEqual(["cli"])
     expect(await Bun.file(sidecarPath(join(tempDir, "clip.mp4"))).exists()).toBe(false)
     expect(await Bun.file(sidecarPath(join(tempDir, "bed.mp3"))).exists()).toBe(false)
+  } finally {
+    server.close()
+    await rm(tempDir, { recursive: true, force: true })
+  }
+})
+
+test("tag reads base url and model from environment variables", async () => {
+  // Given: image fixture and API config supplied only via env
+  const tempDir = await makeTempDir()
+  await writeTinyPng(join(tempDir, "photo.png"))
+  const server = serveImageResponse()
+
+  try {
+    // When: API tag command runs without base-url/model flags
+    const result = await runCli(["tag", tempDir, "--api", "--type", "image"], {
+      MEDIA_TAG_API_KEY: "env-key",
+      MEDIA_TAG_BASE_URL: server.url,
+      MEDIA_TAG_MODEL: "env-model",
+    })
+
+    // Then: request goes to env base url with env model
+    expect(result.exitCode).toBe(0)
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]?.model).toBe("env-model")
   } finally {
     server.close()
     await rm(tempDir, { recursive: true, force: true })

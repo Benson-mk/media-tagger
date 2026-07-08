@@ -78,10 +78,11 @@ function parseOptions(options: TagCommandOptions): ParsedTagOptions {
 }
 
 function apiConfig(options: TagCommandOptions): ApiClientConfig {
+  const { MEDIA_TAG_BASE_URL, MEDIA_TAG_MODEL } = process.env
   const config = {
     api: options.api === true,
-    base_url: options.apiBaseUrl ?? "https://api.openai.com/v1",
-    model: options.apiModel ?? "gpt-4o-mini",
+    base_url: options.apiBaseUrl ?? MEDIA_TAG_BASE_URL ?? "https://api.openai.com/v1",
+    model: options.apiModel ?? MEDIA_TAG_MODEL ?? "gpt-4o-mini",
   }
   return options.apiKey === undefined ? config : { ...config, api_key: options.apiKey }
 }
