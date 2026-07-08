@@ -131,7 +131,7 @@ function chatCompletionsUrl(baseUrl: string): string {
 
 function parseAssistantContent(content: string): unknown {
   try {
-    const parsed: unknown = JSON.parse(content)
+    const parsed: unknown = JSON.parse(stripJsonFence(content))
     return parsed
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -139,4 +139,13 @@ function parseAssistantContent(content: string): unknown {
     }
     throw error
   }
+}
+
+function stripJsonFence(content: string): string {
+  const trimmed = content.trim()
+  if (!trimmed.startsWith("```")) {
+    return content
+  }
+
+  return trimmed.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "")
 }

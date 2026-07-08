@@ -87,6 +87,31 @@ test("analyzeImage returns parsed structured object when API responds with JSON 
   }
 })
 
+test("analyzeImage returns parsed structured object when API wraps JSON in markdown fence", async () => {
+  // Given: local OpenAI-compatible mock server returning fenced JSON
+  const server = serveJsonResponse(200, {
+    choices: [{ message: { content: '```json\n{"title":"Fenced","score":0.8}\n```' } }],
+  })
+
+  try {
+    // When: image analysis parses assistant content
+    const result = await analyzeImage({
+      api: true,
+      base_url: server.url,
+      model: "vlm-test",
+      api_key: "test-key",
+      image: { kind: "data_url", data_url: "data:image/png;base64,AAAA" },
+      prompt: "describe image",
+      schema: ResultSchema,
+    })
+
+    // Then: caller schema receives JSON object inside the fence
+    expect(result).toEqual({ title: "Fenced", score: 0.8 })
+  } finally {
+    server.close()
+  }
+})
+
 test("analyzeImage uses MEDIA_TAG_API_KEY when explicit key is absent", async () => {
   // Given: API key in environment
   const originalEnv = process.env
