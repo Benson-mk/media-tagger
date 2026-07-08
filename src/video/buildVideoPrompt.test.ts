@@ -21,5 +21,7 @@ test("buildVideoPrompt requests structured video captions and includes sampled t
   expect(prompt).toContain("recommended_use")
   expect(prompt).toContain("quality_score")
   expect(prompt).toContain("overall_tags")
+  expect(prompt).toContain('"summary": {')
+  expect(prompt).toContain('"reuse_score": number')
   expect(prompt).toContain("0s, 3s, 6s")
 })
