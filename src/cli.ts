@@ -143,6 +143,6 @@ function makeSidecar(entry: ScanEntry, assetId: string): MediaSidecar {
       model: "",
       media_uploaded_to_api: false,
     },
-    internal: { origin: "local_scan" },
+    source: { origin: "local_scan" },
   }
 }

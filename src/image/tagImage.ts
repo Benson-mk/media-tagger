@@ -208,7 +208,7 @@ function makeSidecar(input: SidecarInput): MediaSidecar {
       media_uploaded_to_api: input.apiResponse !== null,
     },
     image: input.apiResponse?.image,
-    internal: { origin: "local_scan" },
+    source: { origin: "local_scan" },
   }
 }
 

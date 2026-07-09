@@ -172,7 +172,7 @@ function baseSidecar(
       model: mediaUploadedToApi ? options.api.model : "",
       media_uploaded_to_api: mediaUploadedToApi,
     },
-    internal: { origin: "local_scan" },
+    source: { origin: "local_scan" },
   }
 }
 

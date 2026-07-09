@@ -156,7 +156,7 @@ function makeSidecar(parts: SidecarParts): MediaSidecar {
       media_uploaded_to_api: parts.apiResult !== null,
     },
     bgm,
-    internal: { origin: "local_scan" },
+    source: { origin: "local_scan" },
   }
 }
 
