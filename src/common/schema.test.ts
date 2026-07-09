@@ -3,6 +3,36 @@ import { ZodError } from "zod"
 
 import { BgmMetaSchema, ImageMetaSchema, MediaSidecarSchema, VideoMetaSchema } from "./schema"
 
+function baseSidecar() {
+  return {
+    asset_id: "asset-123",
+    source_file: "media/example.jpg",
+    media_type: "image",
+    created_at: "2026-07-07T00:00:00.000Z",
+    updated_at: "2026-07-07T00:00:00.000Z",
+    technical: { width: 1920, height: 1080 },
+    summary: {
+      title: "Example",
+      short_caption: "Example media sidecar",
+      detailed_caption: "Example media sidecar with reusable visuals",
+      best_use: ["hero"],
+      not_recommended_for: [],
+    },
+    tags: {
+      core: ["hero"],
+      visual: ["bright"],
+      audio: [],
+      mood: ["calm"],
+      style: ["clean"],
+      editing: [],
+      project: ["demo"],
+    },
+    quality: { overall_score: 80, reuse_score: 70 },
+    rights: { owner: "team", source: "internal", license: "proprietary", notes: "" },
+    api_usage: { provider: "openai", model: "gpt-4.1", media_uploaded_to_api: false },
+  }
+}
+
 test("MediaSidecarSchema defaults schema_version when valid sidecar omits it", () => {
   // Given: valid sidecar fixture without schema_version
   const value = MediaSidecarSchema.parse({
@@ -49,7 +79,41 @@ test("MediaSidecarSchema defaults schema_version when valid sidecar omits it", (
   })
 
   // Then: parser supplies current schema version
+  expect(value.schema_version).toBe("1.1")
+})
+
+test("MediaSidecarSchema still parses v1.0 sidecars for backward compat", () => {
+  const value = MediaSidecarSchema.parse({ ...baseSidecar(), schema_version: "1.0" })
   expect(value.schema_version).toBe("1.0")
+})
+
+test("MediaSidecarSchema round-trips a v1.1 sidecar with external block", () => {
+  const external = {
+    provider: "pexels",
+    source_id: "12345",
+    source_url: "https://pexels.com/photo/12345",
+    download_url: "https://images.pexels.com/12345.jpg",
+    creator: { name: "Jane Doe", profile_url: "https://pexels.com/@jane" },
+    license: "Pexels License",
+    license_url: "https://pexels.com/license",
+    credits: { required: false, text: "Photo by Jane Doe" },
+    raw_metadata_path: ".media_raw/pexels-12345.json",
+  }
+  const value = MediaSidecarSchema.parse({
+    ...baseSidecar(),
+    schema_version: "1.1",
+    external,
+    internal: { origin: "pexels_download" },
+  })
+  expect(value.external).toEqual(external)
+  expect(value.internal?.origin).toBe("pexels_download")
+})
+
+test("MediaSidecarSchema rejects an unknown schema_version", () => {
+  const parseBadVersion = (): void => {
+    MediaSidecarSchema.parse({ ...baseSidecar(), schema_version: "2.0" })
+  }
+  expect(parseBadVersion).toThrow(ZodError)
 })
 
 test("MediaSidecarSchema throws ZodError when media_type is missing", () => {

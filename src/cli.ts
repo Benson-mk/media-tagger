@@ -105,7 +105,7 @@ async function isDirectory(path: string): Promise<boolean> {
 function makeSidecar(entry: ScanEntry, assetId: string): MediaSidecar {
   const now = new Date().toISOString()
   return {
-    schema_version: "1.0",
+    schema_version: "1.1",
     asset_id: assetId,
     source_file: entry.path,
     media_type: entry.media_type,
@@ -143,5 +143,6 @@ function makeSidecar(entry: ScanEntry, assetId: string): MediaSidecar {
       model: "",
       media_uploaded_to_api: false,
     },
+    internal: { origin: "local_scan" },
   }
 }

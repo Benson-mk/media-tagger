@@ -134,7 +134,7 @@ function baseSidecar(
   mediaUploadedToApi: boolean,
 ): MediaSidecar {
   return {
-    schema_version: "1.0",
+    schema_version: "1.1",
     asset_id: options.assetId,
     source_file: options.videoPath,
     media_type: "video",
@@ -172,6 +172,7 @@ function baseSidecar(
       model: mediaUploadedToApi ? options.api.model : "",
       media_uploaded_to_api: mediaUploadedToApi,
     },
+    internal: { origin: "local_scan" },
   }
 }
 

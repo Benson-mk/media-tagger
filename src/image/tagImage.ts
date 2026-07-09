@@ -185,7 +185,7 @@ function imageMimeType(path: string): string {
 function makeSidecar(input: SidecarInput): MediaSidecar {
   const now = new Date().toISOString()
   return {
-    schema_version: "1.0",
+    schema_version: "1.1",
     asset_id: input.assetId,
     source_file: input.options.path,
     media_type: "image",
@@ -208,6 +208,7 @@ function makeSidecar(input: SidecarInput): MediaSidecar {
       media_uploaded_to_api: input.apiResponse !== null,
     },
     image: input.apiResponse?.image,
+    internal: { origin: "local_scan" },
   }
 }
 

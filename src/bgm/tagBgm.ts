@@ -117,7 +117,7 @@ function audioTechnical(probe: Extract<AudioProbeResult, { readonly available: t
 function makeSidecar(parts: SidecarParts): MediaSidecar {
   const bgm = parts.apiResult === null ? undefined : BgmMetaSchema.parse(parts.apiResult)
   return {
-    schema_version: "1.0",
+    schema_version: "1.1",
     asset_id: parts.assetId,
     source_file: parts.mediaPath,
     media_type: "audio",
@@ -156,6 +156,7 @@ function makeSidecar(parts: SidecarParts): MediaSidecar {
       media_uploaded_to_api: parts.apiResult !== null,
     },
     bgm,
+    internal: { origin: "local_scan" },
   }
 }
 

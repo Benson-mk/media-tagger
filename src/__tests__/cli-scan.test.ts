@@ -64,7 +64,8 @@ test("scan writes schema-valid manifest and updates by asset id when run twice",
   for (const entry of entries) {
     expect(entry.asset_id).toMatch(/^sha256:[0-9a-f]{64}$/)
     expect(entry.media_type).toBe("image")
-    expect(entry.schema_version).toBe("1.0")
+    expect(entry.schema_version).toBe("1.1")
+    expect(entry.internal).toEqual({ origin: "local_scan" })
     expect(entry.technical).toEqual({})
     expect(entry.summary).toEqual({
       title: "",
