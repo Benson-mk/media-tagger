@@ -51,30 +51,43 @@ test("writeSidecar writes pretty json into sidecar file", async () => {
   expect(contents).toBe('{\n  "alpha": 1,\n  "nested": {\n    "beta": true\n  }\n}\n')
 })
 
-test("writeSidecar preserves external and rights when re-tagging an ingester sidecar", async () => {
+test("writeSidecar preserves external source and rights when re-tagging an ingester sidecar", async () => {
   const tempDir = await makeTempDir()
   const mediaPath = join(tempDir, "photo.jpg")
   await writeFile(mediaPath, "")
 
-  const external = {
+  const source = {
+    origin: "external",
     provider: "pexels",
     source_id: "12345",
     creator: { name: "Jane Doe", profile_url: "https://pexels.com/@jane" },
   }
   const rights = { owner: "Jane Doe", source: "pexels", license: "Pexels License", notes: "" }
-  await writeSidecar(mediaPath, { external, rights, tags: { core: ["old"] } })
+  await writeSidecar(mediaPath, { source, rights, tags: { core: ["old"] } })
 
   await writeSidecar(mediaPath, {
     rights: { owner: "user", source: "local_project_asset", license: "unknown", notes: "" },
     tags: { core: ["new"] },
-    internal: { origin: "local_scan" },
+    source: { origin: "local_scan" },
   })
 
   const written = JSON.parse(await readFile(join(tempDir, "photo.media.json"), "utf8"))
-  expect(written.external).toEqual(external)
+  expect(written.source).toEqual(source)
   expect(written.rights).toEqual(rights)
   expect(written.tags).toEqual({ core: ["new"] })
-  expect(written.internal).toEqual({ origin: "local_scan" })
+})
+
+test("writeSidecar keeps local_scan source when no external provenance exists", async () => {
+  const tempDir = await makeTempDir()
+  const mediaPath = join(tempDir, "photo.jpg")
+  await writeFile(mediaPath, "")
+
+  await writeSidecar(mediaPath, { tags: { core: ["old"] }, source: { origin: "local_scan" } })
+  await writeSidecar(mediaPath, { tags: { core: ["new"] }, source: { origin: "local_scan" } })
+
+  const written = JSON.parse(await readFile(join(tempDir, "photo.media.json"), "utf8"))
+  expect(written.source).toEqual({ origin: "local_scan" })
+  expect(written.tags).toEqual({ core: ["new"] })
 })
 
 test("appendManifestLine and updateManifestLine rewrite matching manifest line", async () => {
