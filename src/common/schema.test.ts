@@ -87,8 +87,9 @@ test("MediaSidecarSchema still parses v1.0 sidecars for backward compat", () => 
   expect(value.schema_version).toBe("1.0")
 })
 
-test("MediaSidecarSchema round-trips a v1.1 sidecar with external block", () => {
-  const external = {
+test("MediaSidecarSchema round-trips a v1.1 sidecar with external source block", () => {
+  const source = {
+    origin: "external",
     provider: "pexels",
     source_id: "12345",
     source_url: "https://pexels.com/photo/12345",
@@ -102,11 +103,30 @@ test("MediaSidecarSchema round-trips a v1.1 sidecar with external block", () => 
   const value = MediaSidecarSchema.parse({
     ...baseSidecar(),
     schema_version: "1.1",
-    external,
-    internal: { origin: "pexels_download" },
+    source,
   })
-  expect(value.external).toEqual(external)
-  expect(value.internal?.origin).toBe("pexels_download")
+  expect(value.source).toEqual(source)
+  expect(value.source?.origin).toBe("external")
+})
+
+test("MediaSidecarSchema parses local_scan source block with only origin", () => {
+  const value = MediaSidecarSchema.parse({
+    ...baseSidecar(),
+    schema_version: "1.1",
+    source: { origin: "local_scan" },
+  })
+  expect(value.source?.origin).toBe("local_scan")
+  expect(value.source?.provider).toBeUndefined()
+})
+
+test("MediaSidecarSchema rejects source block without origin", () => {
+  expect(() =>
+    MediaSidecarSchema.parse({
+      ...baseSidecar(),
+      schema_version: "1.1",
+      source: { provider: "pexels" },
+    }),
+  ).toThrow()
 })
 
 test("MediaSidecarSchema rejects an unknown schema_version", () => {
