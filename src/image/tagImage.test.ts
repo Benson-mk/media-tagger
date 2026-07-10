@@ -181,11 +181,42 @@ test("tagImage writes technical-only sidecar and skips API when API is disabled"
     expect(sidecar.image).toBeUndefined()
     expect(sidecar.tags.core).toEqual([])
     expect(sidecar.api_usage.media_uploaded_to_api).toBe(false)
+    expect(sidecar.source?.exif).toBeUndefined()
     expect(server.requests).toHaveLength(0)
     expect(messages).toEqual(["INFO API tagging disabled"])
   } finally {
     console.error = originalError
     server.close()
+  }
+})
+
+test("tagImage embeds EXIF into source.exif when image has EXIF", async () => {
+  // Given: a real jpeg fixture with EXIF copied into a temp dir
+  const tempDir = await makeTempDir()
+  const imagePath = join(tempDir, "photo.jpeg")
+  const manifestPath = join(tempDir, "media_manifest.jsonl")
+  const fixture = new URL("../../media/3A9B7654.jpeg", import.meta.url).pathname
+  await writeFile(imagePath, Buffer.from(await Bun.file(fixture).arrayBuffer()))
+  const originalError = console.error
+  console.error = () => {}
+
+  try {
+    // When: image tagging runs without API enabled
+    await tagImage({
+      path: imagePath,
+      manifestPath,
+      base_url: "http://localhost:1",
+      model: "vlm-test",
+      api_key: "test-key",
+    })
+    const sidecar = await readSidecar(join(tempDir, "photo.media.json"))
+
+    // Then: sidecar carries camera EXIF fields
+    expect(sidecar.source?.exif?.["Make"]).toBe("Canon")
+    expect(sidecar.source?.exif?.["Model"]).toBe("Canon EOS 5D Mark III")
+    expect(sidecar.source?.exif?.["ISO"]).toBe(800)
+  } finally {
+    console.error = originalError
   }
 })
 

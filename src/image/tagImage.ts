@@ -10,6 +10,7 @@ import { writeSidecar } from "../common/writeJson"
 import { updateManifestLine } from "../common/writeJsonl"
 import type { ApiClientConfig } from "../llm/vlmClient"
 import { analyzeImage } from "../llm/vlmClient"
+import { type ExifData, extractExif } from "../metadata/extractExif"
 import { probeImage } from "../metadata/probeImage"
 import { buildImagePrompt } from "./buildImagePrompt"
 
@@ -56,6 +57,7 @@ type SidecarInput = {
   readonly options: TagImageOptions
   readonly assetId: string
   readonly technical: ImageTechnical
+  readonly exif: ExifData | null
   readonly apiResponse: ImageTagResponse | null
 }
 
@@ -112,6 +114,7 @@ export async function tagImage(options: TagImageOptions): Promise<TagImageResult
         aspect_ratio: probe.aspect_ratio,
       } satisfies AvailableImageTechnical)
     : { probe_error: probe.error }
+  const exif = await extractExif(options.path)
   const apiResponse = probe.available
     ? await requestImageTags(options, {
         width: probe.width,
@@ -121,7 +124,7 @@ export async function tagImage(options: TagImageOptions): Promise<TagImageResult
       })
     : null
   const sidecar = MediaSidecarSchema.parse(
-    makeSidecar({ options, assetId, technical, apiResponse }),
+    makeSidecar({ options, assetId, technical, exif, apiResponse }),
   )
 
   await writeSidecar(options.path, sidecar)
@@ -208,7 +211,8 @@ function makeSidecar(input: SidecarInput): MediaSidecar {
       media_uploaded_to_api: input.apiResponse !== null,
     },
     image: input.apiResponse?.image,
-    source: { origin: "local_scan" },
+    source:
+      input.exif === null ? { origin: "local_scan" } : { origin: "local_scan", exif: input.exif },
   }
 }
 
