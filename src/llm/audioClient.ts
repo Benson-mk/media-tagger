@@ -92,6 +92,6 @@ function chatCompletionsUrl(baseUrl: string): string {
 }
 
 function stripJsonFences(content: string): string {
-  const match = /^\s*```(?:json)?\s*([\s\S]*?)\s*```\s*$/.exec(content)
+  const match = /```(?:json)?\s*([\s\S]*?)\s*```/.exec(content)
   return match?.[1] ?? content
 }
