@@ -93,7 +93,15 @@ export const SourceBlockSchema = z.object({
     })
     .optional(),
   raw_metadata_path: z.string().optional(),
-  exif: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+  raw: z
+    .object({
+      api: z.unknown(),
+      json_ld: z.unknown(),
+      bootstrap: z.unknown().optional(),
+    })
+    .optional(),
+  provider_metadata: z.record(z.string(), z.unknown()).optional(),
+  exif: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
   location: z.string().optional(),
 })
 
