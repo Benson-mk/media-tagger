@@ -58,11 +58,23 @@ test("writeSidecar preserves external source and rights when re-tagging an inges
 
   const source = {
     origin: "external",
-    provider: "pexels",
-    source_id: "12345",
-    creator: { name: "Jane Doe", profile_url: "https://pexels.com/@jane" },
+    provider: "pixabay",
+    source_id: "10359152",
+    creator: { name: "Jane Doe", profile_url: "https://pixabay.com/users/jane-12345/" },
+    raw: {
+      api: { id: 10359152, views: 42 },
+      json_ld: null,
+      bootstrap: { id: 10359152, cameraName: "Sony Ilce-7rm3", flash: false },
+    },
+    provider_metadata: { engagement: { views: 42 }, is_editors_choice: true },
+    exif: { Model: "Sony Ilce-7rm3", Flash: false },
   }
-  const rights = { owner: "Jane Doe", source: "pexels", license: "Pexels License", notes: "" }
+  const rights = {
+    owner: "Jane Doe",
+    source: "pixabay",
+    license: "Pixabay Content License",
+    notes: "",
+  }
   await writeSidecar(mediaPath, { source, rights, tags: { core: ["old"] } })
 
   await writeSidecar(mediaPath, {
