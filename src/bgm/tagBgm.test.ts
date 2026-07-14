@@ -42,6 +42,7 @@ function serveBgmResponse(): {
                 editing_use: ["tutorial", "voiceover bed"],
                 avoid_use: ["sports montage"],
                 tags: ["warm", "soft"],
+                quality: { overall_score: 7, reuse_score: 8 },
               }),
             },
           },
@@ -95,6 +96,7 @@ test("tagBgm writes API BGM metadata and manifest when API is enabled", async ()
     expect(sidecar.bgm?.voiceover.safe_for_voiceover).toBe(true)
     expect(sidecar.bgm?.editing_use).toEqual(["tutorial", "voiceover bed"])
     expect(sidecar.tags.audio).toEqual(["lo-fi", "ambient", "warm", "soft"])
+    expect(sidecar.quality).toEqual({ overall_score: 7, reuse_score: 8 })
     expect(sidecar.api_usage).toEqual({
       provider: server.url,
       model: "bgm-test",

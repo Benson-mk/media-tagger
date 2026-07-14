@@ -11,7 +11,10 @@ import { type AudioProbeResult, probeAudio as defaultProbeAudio } from "../metad
 import { type ClipExtractionResult, extractFirstAudioClip } from "./analyzeAudioBasic"
 import { buildBgmPrompt } from "./buildBgmPrompt"
 
-const BgmApiResponseSchema = BgmMetaSchema.extend({ tags: z.array(z.string()) })
+const BgmApiResponseSchema = BgmMetaSchema.extend({
+  tags: z.array(z.string()),
+  quality: z.object({ overall_score: z.number(), reuse_score: z.number() }),
+})
 
 type BgmApiResponse = z.infer<typeof BgmApiResponseSchema>
 
@@ -140,7 +143,7 @@ function makeSidecar(parts: SidecarParts): MediaSidecar {
       editing: parts.apiResult?.editing_use ?? [],
       project: [],
     },
-    quality: {
+    quality: parts.apiResult?.quality ?? {
       overall_score: 0,
       reuse_score: 0,
     },
