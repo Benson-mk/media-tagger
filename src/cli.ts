@@ -17,33 +17,83 @@ type ScanOptions = {
 
 const program = new Command()
 
-program.name("media-tagger").description("Tag media files").version("0.1.0")
+program
+  .name("media-tagger")
+  .description(
+    "Scan local media libraries and write tag sidecars (<name>.media.json, schema v1.1) plus a media_manifest.jsonl. Offline by default; --api sends evidence to an OpenAI-compatible VLM/audio endpoint.",
+  )
+  .version("0.1.0")
+  .addHelpText(
+    "after",
+    `
+Examples:
+  $ media-tagger scan ./library --dry-run     preview what would be scanned
+  $ media-tagger scan ./library               write offline manifest
+  $ media-tagger tag ./library                offline tag (empty AI fields)
+  $ media-tagger tag ./library --api          VLM tagging (needs MEDIA_TAG_API_KEY)
+
+Environment:
+  MEDIA_TAG_API_KEY         API key for --api mode
+  MEDIA_TAG_BASE_URL        OpenAI-compatible base URL (default: https://api.openai.com/v1)
+  MEDIA_TAG_MODEL           model name (default: gpt-4o-mini)
+  MEDIA_TAG_AUDIO_*         audio overrides; fall back to the non-audio variables
+
+Requires ffmpeg/ffprobe on PATH for video/audio; degrades gracefully when absent.
+
+Privacy: whole media files are never uploaded. Video sends sampled JPEG frames
+only; audio sends the first 30s as an mp3 clip; and only when --api is set.`,
+  )
 
 program
   .command("scan <dir>")
-  .description("Scan media files")
-  .option("--dry-run", "Print scan plan without writing files")
-  .option("--output <path>", "Write manifest to custom path")
+  .description("Recursively scan <dir> for media and upsert entries into media_manifest.jsonl")
+  .option("--dry-run", "print scan plan without writing files")
+  .option("--output <path>", "write manifest to custom path (default: <dir>/media_manifest.jsonl)")
+  .addHelpText(
+    "after",
+    `
+Skips dotdirs, *.media.json sidecars, and the manifest itself.
+Asset IDs are sha256:<hex> of file bytes.`,
+  )
   .action(async (dir: string, options: ScanOptions): Promise<void> => {
     await runScanCommand(dir, options)
   })
 
 program
   .command("tag <dir>")
-  .description("Tag media files")
-  .option("--api", "Enable API tagging")
-  .option("--api-key <key>", "API key")
-  .option("--api-base-url <url>", "OpenAI-compatible API base URL")
-  .option("--api-model <model>", "API model")
-  .option("--type <type>", "Media type: image, video, audio, all")
-  .option("--sidecar", "Write sidecar files")
-  .option("--no-sidecar", "Skip sidecar files")
-  .option("--skip-existing", "Skip files with existing sidecars")
-  .option("--force", "Overwrite existing sidecars")
-  .option("--dry-run", "Print tag plan without writing files")
-  .option("--sample-interval <seconds>", "Video frame sample interval")
-  .option("--max-frames <count>", "Maximum sampled video frames")
-  .option("--output <path>", "Write manifest to custom path")
+  .description(
+    "Tag media in <dir>: write <name>.media.json sidecars and update media_manifest.jsonl",
+  )
+  .option("--api", "enable AI tagging via an OpenAI-compatible API (default: offline)")
+  .option("--api-key <key>", "API key (default: $MEDIA_TAG_API_KEY)")
+  .option(
+    "--api-base-url <url>",
+    "API base URL (default: $MEDIA_TAG_BASE_URL or https://api.openai.com/v1)",
+  )
+  .option("--api-model <model>", "model name (default: $MEDIA_TAG_MODEL or gpt-4o-mini)")
+  .option("--type <type>", "only tag one media type: image | video | audio | all", "all")
+  .option("--sidecar", "write per-file sidecars (default)")
+  .option("--no-sidecar", "manifest only; delete sidecars after tagging")
+  .option("--skip-existing", "skip files that already have a sidecar")
+  .option("--force", "overwrite existing sidecars (overrides --skip-existing)")
+  .option("--dry-run", "print tag plan without writing files")
+  .option(
+    "--sample-interval <seconds>",
+    "seconds between sampled video frames (default: 3, or duration/max-frames)",
+  )
+  .option("--max-frames <count>", "maximum sampled video frames per video (default: 20)")
+  .option("--output <path>", "write manifest to custom path (default: <dir>/media_manifest.jsonl)")
+  .addHelpText(
+    "after",
+    `
+Examples:
+  $ media-tagger tag ./library --type video --max-frames 10
+  $ media-tagger tag ./library --api --skip-existing
+  $ media-tagger tag ./library --no-sidecar --output ./out/manifest.jsonl
+
+Video is sampled to JPEG frames via ffmpeg (.media_cache/); audio uses a 30s
+mp3 clip. Whole files are never uploaded, even with --api.`,
+  )
   .action(async (dir: string, options: TagCommandOptions): Promise<void> => {
     await runTagCommand(dir, options)
   })
