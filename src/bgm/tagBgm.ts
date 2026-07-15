@@ -10,8 +10,9 @@ import type { ApiClientConfig } from "../llm/vlmClient"
 import { type AudioProbeResult, probeAudio as defaultProbeAudio } from "../metadata/probeAudio"
 import { type ClipExtractionResult, extractFirstAudioClip } from "./analyzeAudioBasic"
 import { buildBgmPrompt } from "./buildBgmPrompt"
+import { detectTempoKey as defaultDetectTempoKey, type TempoKeyResult } from "./detectTempoKey"
 
-const BgmApiResponseSchema = BgmMetaSchema.extend({
+const BgmApiResponseSchema = BgmMetaSchema.omit({ tempo: true, key: true }).extend({
   tags: z.array(z.string()),
   quality: z.object({ overall_score: z.number(), reuse_score: z.number() }),
 })
@@ -23,6 +24,7 @@ type BgmTaggingOptions = ApiClientConfig & {
   readonly manifestFile: string
   readonly probeAudio?: (mediaPath: string) => Promise<AudioProbeResult>
   readonly extractClip?: (mediaPath: string) => Promise<ClipExtractionResult | null>
+  readonly detectTempoKey?: (mediaPath: string) => Promise<TempoKeyResult | null>
 }
 
 type SidecarParts = {
@@ -53,7 +55,8 @@ export async function tagBgm(options: BgmTaggingOptions): Promise<MediaSidecar> 
     return sidecar
   }
 
-  const technical = audioTechnical(probe)
+  const tempoKey = await (options.detectTempoKey ?? defaultDetectTempoKey)(options.mediaPath)
+  const technical = audioTechnical(probe, tempoKey)
   if (options.api !== true) {
     const sidecar = makeSidecar({
       mediaPath: options.mediaPath,
@@ -107,13 +110,22 @@ async function analyzeBgmAudio(
   })
 }
 
-function audioTechnical(probe: Extract<AudioProbeResult, { readonly available: true }>) {
+function audioTechnical(
+  probe: Extract<AudioProbeResult, { readonly available: true }>,
+  tempoKey: TempoKeyResult | null,
+): MediaSidecar["technical"] {
   return {
     duration: probe.duration,
     codec: probe.codec,
     sample_rate: probe.sample_rate,
     channels: probe.channels,
     bitrate: probe.bitrate,
+    ...(tempoKey === null
+      ? {}
+      : {
+          tempo: { bpm: tempoKey.tempo.bpm, confidence: tempoKey.tempo.confidence },
+          key: { value: tempoKey.key.value, confidence: tempoKey.key.confidence },
+        }),
   }
 }
 
@@ -153,13 +165,22 @@ function makeSidecar(parts: SidecarParts): MediaSidecar {
       license: "unknown",
       notes: "User-provided local media. Confirm rights before publishing.",
     },
-    api_usage: {
-      provider: parts.apiResult === null ? "" : parts.apiConfig.base_url,
-      model: parts.apiResult === null ? "" : parts.apiConfig.model,
-      media_uploaded_to_api: parts.apiResult !== null,
-    },
+    api_usage: audioApiUsage(parts),
     bgm,
     source: { origin: "local_scan" },
+  }
+}
+
+function audioApiUsage(parts: SidecarParts): MediaSidecar["api_usage"] {
+  if (parts.apiResult === null) {
+    return { provider: "", model: "", media_uploaded_to_api: false }
+  }
+
+  const { MEDIA_TAG_AUDIO_BASE_URL, MEDIA_TAG_AUDIO_MODEL } = process.env
+  return {
+    provider: MEDIA_TAG_AUDIO_BASE_URL ?? parts.apiConfig.base_url,
+    model: MEDIA_TAG_AUDIO_MODEL ?? parts.apiConfig.model,
+    media_uploaded_to_api: true,
   }
 }
 

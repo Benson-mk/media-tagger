@@ -20,8 +20,6 @@ test("buildBgmPrompt requests structured BGM fields when given technical metadat
     "genre",
     "mood",
     "energy",
-    "tempo",
-    "key",
     "structure",
     "voiceover safety",
     "editing_use",
@@ -33,7 +31,8 @@ test("buildBgmPrompt requests structured BGM fields when given technical metadat
   for (const field of requiredFields) {
     expect(prompt).toContain(field)
   }
-  expect(prompt).toContain('"bpm": number')
+  expect(prompt).not.toContain('"bpm"')
+  expect(prompt).not.toContain('"key"')
   expect(prompt).toContain('"safe_for_voiceover": boolean')
   expect(prompt).toContain("Use best estimates; do not return null")
 })

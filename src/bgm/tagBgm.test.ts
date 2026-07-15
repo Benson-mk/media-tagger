@@ -85,6 +85,10 @@ test("tagBgm writes API BGM metadata and manifest when API is enabled", async ()
         bitrate: 128_000,
       }),
       extractClip: async () => ({ kind: "data_url", data_url: "data:audio/mpeg;base64,AAAA" }),
+      detectTempoKey: async () => ({
+        tempo: { bpm: 120, confidence: 0.9 },
+        key: { value: "C major", confidence: 0.8 },
+      }),
     })
 
     // Then: sidecar has parsed BGM fields and manifest mirrors same asset
@@ -134,9 +138,13 @@ test("tagBgm writes technical audio metadata only when API is disabled", async (
     extractClip: async () => {
       throw new Error("extractClip should not run")
     },
+    detectTempoKey: async () => ({
+      tempo: { bpm: 92, confidence: 0.6 },
+      key: { value: "A minor", confidence: 0.5 },
+    }),
   })
 
-  // Then: sidecar keeps technical metadata and omits BGM analysis
+  // Then: sidecar keeps technical metadata (incl. local tempo/key) and omits BGM analysis
   const sidecar = await parseSidecar(audioPath)
   expect(sidecar.technical).toEqual({
     duration: 12,
@@ -144,6 +152,8 @@ test("tagBgm writes technical audio metadata only when API is disabled", async (
     sample_rate: 48_000,
     channels: 1,
     bitrate: 96_000,
+    tempo: { bpm: 92, confidence: 0.6 },
+    key: { value: "A minor", confidence: 0.5 },
   })
   expect(sidecar.bgm).toBeUndefined()
   expect(sidecar.api_usage.media_uploaded_to_api).toBe(false)
