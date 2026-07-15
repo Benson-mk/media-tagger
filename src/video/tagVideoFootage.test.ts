@@ -127,6 +127,7 @@ test("tagVideoFootage writes enriched sidecar and manifest when API returns vide
           has_audio: true,
         }),
         sample: async (): Promise<readonly SampledFrame[]> => [{ time: 0, path: framePath }],
+        detectTempoKey: async () => null,
       },
     })
 
@@ -181,10 +182,14 @@ test("tagVideoFootage writes technical sidecar without API call when API disable
           sampleCalls += 1
           return [{ time: 0, path: framePath }]
         },
+        detectTempoKey: async () => ({
+          tempo: { bpm: 120, confidence: 0.7 },
+          key: { value: "C major", confidence: 0.6 },
+        }),
       },
     })
 
-    // Then: sidecar keeps technical metadata and omits video enrichment
+    // Then: sidecar keeps technical metadata (incl. local tempo/key) and omits video enrichment
     const sidecar = MediaSidecarSchema.parse(await readSidecar(join(tempDir, "clip.media.json")))
     expect(sampleCalls).toBe(0)
     expect(sidecar.video).toBeUndefined()
@@ -195,6 +200,8 @@ test("tagVideoFootage writes technical sidecar without API call when API disable
       fps: 30,
       codec: "h264",
       has_audio: true,
+      tempo: { bpm: 120, confidence: 0.7 },
+      key: { value: "C major", confidence: 0.6 },
     })
   } finally {
     await rm(tempDir, { recursive: true, force: true })

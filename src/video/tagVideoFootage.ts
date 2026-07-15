@@ -1,3 +1,4 @@
+import { detectTempoKey as defaultDetectTempoKey, type TempoKeyResult } from "../bgm/detectTempoKey"
 import { logger } from "../common/logger"
 import { manifestPath as defaultManifestPath } from "../common/paths"
 import type { MediaSidecar } from "../common/schema"
@@ -19,6 +20,7 @@ type VideoTaggingDependencies = {
     path: string,
     options?: SampleFramesOptions,
   ) => Promise<readonly SampledFrame[]>
+  readonly detectTempoKey?: (path: string) => Promise<TempoKeyResult | null>
 }
 
 export type TagVideoFootageOptions = {
@@ -34,10 +36,14 @@ export async function tagVideoFootage(options: TagVideoFootageOptions): Promise<
   const now = (options.now ?? (() => new Date()))().toISOString()
   const probe = options.dependencies?.probe ?? probeVideo
   const sample = options.dependencies?.sample ?? sampleFrames
+  const detect = options.dependencies?.detectTempoKey ?? defaultDetectTempoKey
   const probeResult = await probe(options.videoPath)
+  const hasAudio = probeResult.available && probeResult.has_audio === true
+  const tempoKey = hasAudio ? await detect(options.videoPath) : null
+  const technical = technicalMetadata(probeResult, tempoKey)
 
   if (options.api.api !== true) {
-    const sidecar = baseSidecar(options, now, technicalMetadata(probeResult), false)
+    const sidecar = baseSidecar(options, now, technical, false)
     await writeOutputs(options, sidecar)
     return sidecar
   }
@@ -49,7 +55,7 @@ export async function tagVideoFootage(options: TagVideoFootageOptions): Promise<
   )
   if (frames.length === 0) {
     logger.warn("video frame sampling produced no frames", { path: options.videoPath })
-    const sidecar = baseSidecar(options, now, technicalMetadata(probeResult), false)
+    const sidecar = baseSidecar(options, now, technical, false)
     await writeOutputs(options, sidecar)
     return sidecar
   }
@@ -58,7 +64,7 @@ export async function tagVideoFootage(options: TagVideoFootageOptions): Promise<
     { ...options.api, schema: VideoTaggingResponseSchema },
     [{ type: "text", text: buildVideoPrompt({ frames }) }, ...(await frameContentParts(frames))],
   )
-  const sidecar = responseToSidecar(options, now, technicalMetadata(probeResult), frames, response)
+  const sidecar = responseToSidecar(options, now, technical, frames, response)
   await writeOutputs(options, sidecar)
   return sidecar
 }
@@ -112,7 +118,10 @@ function samplingInterval(frames: readonly SampledFrame[]): number {
   return first !== undefined && second !== undefined ? second.time - first.time : 0
 }
 
-function technicalMetadata(result: VideoProbeResult): MediaSidecar["technical"] {
+function technicalMetadata(
+  result: VideoProbeResult,
+  tempoKey: TempoKeyResult | null,
+): MediaSidecar["technical"] {
   if (result.available) {
     return {
       duration: result.duration,
@@ -121,6 +130,12 @@ function technicalMetadata(result: VideoProbeResult): MediaSidecar["technical"] 
       fps: result.fps,
       codec: result.codec,
       has_audio: result.has_audio,
+      ...(tempoKey === null
+        ? {}
+        : {
+            tempo: { bpm: tempoKey.tempo.bpm, confidence: tempoKey.tempo.confidence },
+            key: { value: tempoKey.key.value, confidence: tempoKey.key.confidence },
+          }),
     }
   }
 
